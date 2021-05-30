@@ -1,0 +1,22 @@
+!, &reduce [lambda, [f, seq, initial-value],
+  [if,
+    [null?, seq], initial-value,
+    [reduce, f, [cdr, seq], [f, initial-value, [car, seq]]]]]
+
+!, &sprint [lambda, [list],
+  [reduce, [lambda, [s, arg], [string-append, s, [if, [string?, arg], arg, [repr, arg]]]], list, !" ""]]
+
+!, &hanoi-print [lambda, [disk, from, to],
+  [sprint, [list, !" "Move disk ", disk, !" " from ", from, !" " to ", to]]]
+
+!, &hanoi-move [lambda, [n, from, to, via, tail],
+  [if,
+    [=, n, 1], [cons, [hanoi-print, n, from, to], tail],
+    [hanoi-move, [-, n, 1], from, via, to,
+      [cons, [hanoi-print, n, from, to],
+        [hanoi-move, [-, n, 1], via, to, from, tail]]]]]
+
+!, &hanoi [lambda, [n],
+  [hanoi-move, n, !' L, !' M, !' R, []]]
+
+!, [hanoi, 3]

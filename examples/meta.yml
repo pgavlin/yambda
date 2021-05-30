@@ -1,0 +1,79 @@
+!# [define, interpret, false]
+
+!# [let, null,
+  # primitive-environment contains a small number of primitive
+  # procedures; it can be extended easily with additional primitives.
+  [define, primitive-environment,
+    !` [[apply, !. !, apply], [assq, !. !, assq],
+        [car, !. !, car], [cdr, !. !, cdr],
+        [cons, !. !, cons], [eq?, !. !, eq?],
+        [list, !. !, list], [null?, !. !, null?],
+        [pair?, !. !, pair?], [set-car!, !. !, set-car!],
+        [set-cdr!, !. !, set-cdr!], [symbol?, !. !, symbol?]]],
+
+  # new-env returns a new environment from a formal parameter
+  # specification, a list of actual parameters, and an outer
+  # environment.  The symbol? test identifies "improper"
+  # argument lists.  Environments are association lists,
+  # associating variables with values.
+  [define, new-env,
+    [lambda, [formals, actuals, env],
+      [cond,
+        [[null?, formals], env],
+        [[symbol?, formals], [cons, [cons, formals, actuals], env]],
+        [else, [cons, [cons, [car, formals], [car, actuals]],
+                      [new-env, [cdr, formals], [cdr, actuals], env]]]]]],
+
+  # lookup finds the value of the variable var in the environment
+  # env, using assq.  Assumes var is bound in env.
+  [define, lookup,
+    [lambda, [var, env],
+      [cdr, [assq, var, env]]]],
+
+  # assign is similar to lookup but alters the binding of the
+  # variable var by changing the cdr of the association pair
+  [define, assign,
+    [lambda, [var, val, env], [set-cdr!, [assq, var, env], val]]],
+    
+  # exec evaluates the expression, recognizing all core forms.
+  [define, exec,
+    [lambda, [exp, env],
+      [cond,
+        [[symbol?, exp], [lookup, exp, env]],
+        [[pair?, exp],
+          [case, [car, exp],
+            [[quote], [car, [cdr, exp]]],
+            [[lambda],
+              [lambda, vals,
+                [let, [[env, [new-env, [car, [cdr, exp]], vals, env]]],
+                  [let, loop, [[exps, [cdr, [cdr, exp]]]],
+                    [if, [null?, [cdr, exps]],
+                      [exec, [car, exps], env],
+                        [begin,
+                          [exec, [car, exps], env],
+                          [loop, [cdr, exps]]]]]]]],
+            [[if],
+              [if, [exec, [car, [cdr, exp]], env],
+                [exec, [car, [cdr, [cdr, exp]]], env],
+                [exec, [car, [cdr, [cdr, [cdr, exp]]]], env]]],
+            [[set!],
+              [assign, [car, [cdr, exp]],
+                [exec, [car, [cdr, [cdr, exp]]], env],
+                env]],
+            [else,
+              [apply, [exec, [car, exp], env],
+                [map, [lambda, [x], [exec, x, env]],
+                [cdr, exp]]]]]],
+        [else, exp]]]],
+        
+  # interpret starts execution with the primitive environment.
+  [set!, interpret, [lambda, [exp], [exec, exp, primitive-environment]]]]
+
+!, !interpret [
+  !' [[lambda, [reverse],
+      [set!, reverse,
+        [lambda, [ls, new],
+          [if, [null?, ls],
+            new,
+            [reverse, [cdr, ls], [cons, [car, ls], new]]]]],
+      [reverse, !' [a, b, c, d, e], !' null]], false]]]

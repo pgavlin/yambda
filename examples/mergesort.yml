@@ -1,0 +1,55 @@
+!# &sort false
+!# &merge false
+!# [let, [],
+  [define, [dosort, pred?, ls, n],
+    [if, [=, n, 1],
+      [list, [car, ls]],
+      [let, [[i, [quotient, n, 2]]],
+        [domerge, pred?,
+          [dosort, pred?, ls, i],
+          [dosort, pred?, [list-tail, ls, i], [-, n, i]]]]]],
+  [define, [domerge, pred?, l1, l2],
+    [cond,
+      [[null?, l1], l2],
+      [[null?, l2], l1],
+      [[pred?, [car, l2], [car, l1]],
+        [cons, [car, l2], [domerge, pred?, l1, [cdr, l2]]]],
+      [else, [cons, [car, l1], [domerge, pred?, [cdr, l1], l2]]]]]
+  [set!, sort,
+    [lambda, [pred?, l],
+      [if, [null?, l], l, [dosort, pred?, l, [length, l]]]]],
+  [set!, merge,
+    [lambda, [pred?, l1, l2],
+      [domerge, pred?, l1, l2]]]]
+
+!, !sort
+- [lambda, [x, y], [string>?, [symbol->string, x] [symbol->string, y]]]
+- !'
+  - LISP 1, 1.5, LISP 2(abandoned)	
+  - Maclisp	
+  - Interlisp	
+  - Lisp Machine Lisp	
+  - Scheme
+  - R5RS
+  - R6RS
+  - R7RS small
+  - NIL
+  - Franz Lisp
+  - Common Lisp
+  - Le Lisp
+  - T	
+  - Chez Scheme
+  - Emacs Lisp
+  - AutoLISP
+  - PicoLisp
+  - EuLisp
+  - ISLISP
+  - OpenLisp
+  - PLT Scheme
+  - Racket
+  - GNU Guile
+  - Visual LISP
+  - Clojure
+  - Arc
+  - LFE
+  - Hy

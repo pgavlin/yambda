@@ -1,0 +1,5 @@
+- &foo some value
+- *foo
+
+- !, &bar !' some other value
+- *bar

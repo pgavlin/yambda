@@ -1,0 +1,242 @@
+## Utility functions
+!# &falsy [lambda, [v],
+  [or,
+    [null?, v],
+    [eq?, !str "", v],
+    [and, [symbol?, v], [eq?, !str "", [symbol->string, v]]]]]
+
+!# &reduce [lambda, [f, seq, initial-value],
+  [if,
+    [null?, seq], initial-value,
+    [reduce, f, [cdr, seq], [f, initial-value, [car, seq]]]]]
+
+!# &sprint [lambda, list,
+  [reduce, [lambda, [s, arg], [string-append, s, [if, [string?, arg], arg, [repr, arg]]]], list, !" ""]]
+
+!# &prop [lambda, [value, !. path],
+  [define, [prop-rec, value, path],
+    [cond,
+      [[null?, path], value],
+      [[pair?, value], [prop-rec, [list-ref, value, [car, path]], [cdr, path]]],
+      [[dictionary?, value], [prop-rec, [dictionary-ref, value, [car, path]], [cdr, path]]],
+      [else, false]]],
+  [prop-rec, value, path]]
+
+!# &apply-string [lambda, [s, proc],
+  [cond,
+    [string?, s], [apply, proc, [s]],
+    [symbol?. s], [string->symbol, [apply, proc, [[symbol->string, s]]]],
+    false]]
+
+!# &default [lambda, [default, given],
+  [if, [not, [falsy, given]], given,
+    default]]
+
+!# &trunc [lambda, [s, n],
+  [apply-string, s, [lambda, [s],
+    [let, [l, [string-length, s]],
+      [if, [<, [l, n]], s,
+        [substring, s, 0, n]]]]]]
+
+!# &contains [lambda, [s, needle],
+  [string-contains, [repr, s], [repr, needle]]]
+
+!# &replace [lambda, [s, old, new],
+  [apply-string, s, [lambda, [s],
+    [string-replace, s, [repr, old], [repr, new]]]]]
+
+!# &safe-name [lambda, [s],
+  [apply-string, s, [lambda, [s], [trim-suffix, [string-trunc, s, 63], !str "-"]]]]
+
+---
+
+!# &release !`
+# Sample release values.
+
+name: hello-world
+namespace: ""
+isUpgrade: false
+isInstall: true
+revision: 1
+service: helmet
+
+---
+
+!# &chart !`
+# Chart metadata for hello-world.
+
+apiVersion: v2
+name: hello-world
+description: A Helm chart for Kubernetes
+
+# A chart can be either an 'application' or a 'library' chart.
+#
+# Application charts are a collection of templates that can be packaged into versioned archives
+# to be deployed.
+#
+# Library charts provide useful utilities or functions for the chart developer. They're included as
+# a dependency of application charts to inject those utilities and functions into the rendering
+# pipeline. Library charts do not define any templates and therefore cannot be deployed.
+type: application
+
+# This is the chart version. This version number should be incremented each time you make changes
+# to the chart and its templates, including the app version.
+# Versions are expected to follow Semantic Versioning (https://semver.org/)
+version: 0.1.0
+
+# This is the version number of the application being deployed. This version number should be
+# incremented each time you make changes to the application. Versions are not expected to
+# follow Semantic Versioning. They should reflect the version the application is using.
+# It is recommended to use it with quotes.
+appVersion: "1.16.0"
+
+!# &values !`
+# Default values for hello-world.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: nginx
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: null
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+service:
+  type: ClusterIP
+  port: 80
+
+# Expand the name of the chart.
+!# &hello-world.name
+[safe-name, [default, [prop, chart, !' name], [prop, values, !' nameOverride]]]
+
+# Create a default fully qualified app name.
+# We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+# If release name contains chart name it will be used as a full name.
+!# &hello-world.fullname
+[if, [not, [falsy, [prop, values, !' fullnameOverride]]],
+    [safe-name, [prop, values, !' fullnameOverride]],
+    [let, [[name, [default, [prop, chart, !' name], [prop, values, !' nameOverride]]]],
+      [safe-name, [if, [contains, name, [prop, release, !' name]],
+        [prop, release, !' name]],
+        [sprint, [prop, release, !' name], !str "-", name]]]]
+
+# Create chart name and version as used by the chart label.
+!# &hello-world.chart
+[safe-name, [replace,
+    [sprint, [prop, chart, !' name], !str "-", [prop, chart, !' version]],
+    !str "+",
+    !str "_"]]
+
+# Selector labels
+!# &hello-world.selector-labels !`
+app.kubernetes.io/name: *hello-world.name
+app.kubernetes.io/instance: !, [prop, release, !' name]
+
+# Version label
+!# &version-label [let, [[v, [prop, chart, !' appVersion]]],
+  [if, [falsy, v], false,
+    !` app.kubernetes.io/version: !, v]]
+
+# Common labels
+!# &hello-world.labels !`
+helm.sh/chart: *hello-world.chart
+selector-labels: != *hello-world.selector-labels
+version-label: != *version-label
+app.kubernetes.io/managed-by: !, [prop, release, !' service]
+
+# Create the name of the service account to use
+!# &hello-world.service-account-name
+[if, [not, [falsy, [prop, values, !' serviceAccount, !' create]]],
+  [default, hello-world.fullname, [prop, values, !' serviceAccount, !' name]],
+  [default, !' default, [prop, values, !' serviceAccount, !' name]]]
+
+---
+
+# Define the deployment
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: *hello-world.fullname
+  labels:
+    _: != *hello-world.labels
+spec:
+  replicas: !, [prop, values, !' replicaCount]
+  selector:
+    matchLabels:
+      _: != *hello-world.selector-labels
+  template:
+    metadata:
+      labels:
+        _: != *hello-world.selector-labels
+    spec:
+      serviceAccountName: *hello-world.service-account-name
+      containers:
+        - name: !, [prop, chart, !' name]
+          image: !, [sprint, [prop, values, !' image, !' repository], !str ":", [default, [prop, chart, !' appVersion], [prop, values, !' image, !' tag]]]
+          imagePullPolicy: !, [prop, values, !' image, !' pullPolicy]
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+
+---
+
+# Define the service
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: *hello-world.fullname
+  labels:
+    _: != *hello-world.labels
+spec:
+  type: !, [prop, values, !' service, !' type]
+  ports:
+    - port: !, [prop, values, !' service, !' port]
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    _: != *hello-world.selector-labels
+
+---
+
+# Service account annotations
+!# &service-account-annotations [let, [[v, [prop, values, !' serviceAccount, !' annotations]]],
+  [if, [falsy, v], false,
+    !` annotations: !, v]]
+
+!, [if, [falsy, [prop, values, !' serviceAccount, !' create]],
+  [yaml-elide, null],
+!`
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: *hello-world.service-account-name
+  labels:
+    _: != *hello-world.labels
+  annotations: != *service-account-annotations
+]

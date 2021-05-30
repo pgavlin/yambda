@@ -1,0 +1,30 @@
+!, &for [lambda, [from, to, f, out],
+  [if, [<, from, to], [for, [+, from, 1], to, f, [f, from, out]], out]]
+
+!# &mandelbrot-chars !str " .,`'\":;-+oO0123456789%*&$@#"
+
+!, &mandelbrot-iter [lambda, [x, y, x0, y0, i],
+  [if,
+    [=, i, 28], !char " ",
+    [if,
+      [">", [+, [*, x0, x0], [*, y0, y0]], 4], [string-ref, mandelbrot-chars, i],
+      [mandelbrot-iter, x, y,
+        [+, [-, [*, x0, x0], [*, y0, y0]], x], [+, [*, 2, x0, y0], y],
+        [+, i, 1]]]]]
+
+!, &mandelbrot-char [lambda, [x, y],
+  [mandelbrot-iter, x, y,
+    [+, [-, [*, x, x], [*, y, y]], x], [+, [*, 2, x, y], y],
+    0]]
+
+!, &mandelbrot [lambda, [xmin, xmax, ymin, ymax],
+  [vector->string, [for, 0, 24, [lambda, [py, text],
+    [vector-append, text, [vector-append, [for, 0, 80, [lambda, [px, line],
+      [vector-append, line, !vec [[mandelbrot-char,
+        [+, [*, [/, px, 80], [-, xmax, xmin]], xmin],
+        [+, [*, [/, py, 24], [-, ymax, ymin]], ymin]]]]],
+      !vec []],
+      !vec [!char "\n"]]]],
+    !vec []]]]
+
+!, [mandelbrot, -2.15, 1.25, -1.25, 1.25]
