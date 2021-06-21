@@ -1,3 +1,5 @@
+# sorting a list of LISPs
+
 !# &sort false
 !# &merge false
 !# [let, [],
@@ -41,6 +43,7 @@
   - Chez Scheme
   - Emacs Lisp
   - AutoLISP
+  - Yambda
   - PicoLisp
   - EuLisp
   - ISLISP

@@ -1,12 +1,4 @@
-# implicit quotes around everything, eval dequotes
-#
-# &sym v -> (define sym v)
-# *sym -> sym
-# !vec [...] -> [...]
-# !sym [...] -> [*sym, ...]
-# !~ [...] -> (unquote ...)
-# !` [...] -> (syntax-quote ...)
-# !' [...] -> (quote ...)
+# A simple tail-recursive implementation of factorials.
 
 - !, &factorial-loop [lambda, [n, acc],
   [if, [=, n, 0], acc,

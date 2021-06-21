@@ -1,3 +1,5 @@
+# A solver for towers of Hanoi. Returns the results as a YAML list.
+
 !, &reduce [lambda, [f, seq, initial-value],
   [if,
     [null?, seq], initial-value,

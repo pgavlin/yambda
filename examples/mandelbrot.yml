@@ -1,3 +1,5 @@
+# the mandelbrot set, rendered as a block-style YAML string
+
 !, &for [lambda, [from, to, f, out],
   [if, [<, from, to], [for, [+, from, 1], to, f, [f, from, out]], out]]
 

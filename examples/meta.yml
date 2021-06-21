@@ -1,3 +1,5 @@
+# a metacircular evaluator, because life has no meaning
+
 !# [define, interpret, false]
 
 !# [let, null,

@@ -1,3 +1,5 @@
+# helmet: what if Helm, but entirely in YAML?
+
 ## Utility functions
 !# &falsy [lambda, [v],
   [or,
